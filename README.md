@@ -34,8 +34,8 @@ This Discord bot lets users receive notifications when servers matching their sp
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/Quintenvw/discord-hetzner-auction-notifications
-   cd discord-hetzner-auction-notifications
+   git clone https://github.com/Quintenvw/hetzner-auction-discord-bot.git
+   cd hetzner-auction-discord-bot
    ```
 
 2. **Install dependencies:**
