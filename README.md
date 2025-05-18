@@ -18,6 +18,7 @@ This Discord bot lets users receive notifications when servers matching their sp
 ## Screenshots
 
 ![Example notification](/screenshots/example-notification.png)
+![Example command](/screenshots/example-command.png)
 
 ## Requirements
 
