@@ -20,7 +20,7 @@ class Bot(commands.Bot):
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
 
-        motor = AsyncIOMotorClient(connect=True)
+        motor = AsyncIOMotorClient(settings.mongodb_uri, connect=True)
         motor.get_io_loop = asyncio.get_running_loop
         self.db = motor.hetzner
 

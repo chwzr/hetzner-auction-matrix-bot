@@ -9,8 +9,8 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, frozen=True)
 
-    bot_token: str | None = Field(None, alias="BOT_TOKEN")
-    mongodb_uri: str | None = Field(None, alias="MONGODB_URI")
-    hetzner_notifications_channel_id: int | None = Field(None, alias="HETZNER_NOTIFICATIONS_CHANNEL_ID")
+    bot_token: str = Field(..., alias="BOT_TOKEN")
+    mongodb_uri: str = Field(..., alias="MONGODB_URI")
+    hetzner_notifications_channel_id: int = Field(..., alias="HETZNER_NOTIFICATIONS_CHANNEL_ID")
 
 settings: Settings = Settings()  # type: ignore[call-arg]
