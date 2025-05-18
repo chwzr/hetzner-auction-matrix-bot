@@ -170,7 +170,7 @@ class Hetzner(commands.Cog, name="hetzner"):
                     name="RAM", value=f"{found_ram_size} GB ({found_ram_ecc})"
                 )
                 embed.add_field(
-                    name="HDD", value=f"{found_hdd_size} GB ({found_hdd_count} HDDs)"
+                    name="Storage", value=f"{found_hdd_size} GB ({found_hdd_count} drives)"
                 )
 
                 view = discord.ui.View()
