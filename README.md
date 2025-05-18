@@ -1,4 +1,4 @@
-# Hetzner Auction Notifications Cog
+# Hetzner Auctions Notifications Cog
 This Discord cog lets users receive notifications when servers matching their specific requirements appear in the Hetzner server auctions.
 
 ## Requirements
