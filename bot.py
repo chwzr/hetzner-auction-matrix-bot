@@ -14,6 +14,9 @@ class Bot(commands.Bot):
         self.session: aiohttp.ClientSession | None = None
         self.db = None
 
+        self.activity = discord.CustomActivity("Checking Hetzner auction")
+        self.status = discord.Status.online
+
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
 

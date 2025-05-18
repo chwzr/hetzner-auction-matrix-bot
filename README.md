@@ -49,6 +49,8 @@ This Discord bot lets users receive notifications when servers matching their sp
    HETZNER_NOTIFICATIONS_CHANNEL_ID=your_discord_channel_id_for_notifications
    ```
 
+    You can get a Discord bot token from the [Discord developer portal](https://discord.com/developers/applications).
+
 ## Usage
 
 1. **Run the bot:**
