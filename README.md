@@ -15,6 +15,10 @@ This Discord bot lets users receive notifications when servers matching their sp
 - **Automatic Updates**: The bot periodically checks for new auction items.
 - **MongoDB Integration**: User configurations are stored in a MongoDB database.
 
+## Screenshots
+
+![Example notification](/screenshots/example-notification.png)
+
 ## Requirements
 
 - Python 3.8+

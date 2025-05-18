@@ -19,11 +19,11 @@ class Hetzner(commands.Cog, name="hetzner"):
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
-        self.check_auctions.start()
+        self.check_auction.start()
 
     @tasks.loop(minutes=31, reconnect=True)
-    async def check_auctions(self):
-        print("Checking Hetzner auctions...")
+    async def check_auction(self):
+        print("Checking Hetzner auction...")
 
         # Fetch all configs from the database
         configs = await self.bot.db.hetzner.find().to_list(length=None)
@@ -37,7 +37,7 @@ class Hetzner(commands.Cog, name="hetzner"):
             settings.hetzner_notifications_channel_id
         ) or await self.bot.fetch_channel(settings.hetzner_notifications_channel_id)
         if not channel:
-            print("Hetzner auctions notifications channel not found.")
+            print("Hetzner auction notifications channel not found.")
             return
 
         # Fetch the data from Hetzner
@@ -157,7 +157,7 @@ class Hetzner(commands.Cog, name="hetzner"):
             if user:
                 embed = discord.Embed(
                     title="Server Found!",
-                    description=f"### A server matching your requirements has been found in the Hetzner server auctions.\n{formatted_description}",
+                    description=f"### A server matching your requirements has been found in the Hetzner server auction.\n{formatted_description}",
                     color=0x00FF00,
                 )
                 embed.add_field(
@@ -204,7 +204,7 @@ class Hetzner(commands.Cog, name="hetzner"):
 
     @command(
         name="hetzner",
-        description="Get notified when a server from Hetzner server auctions reaches your set requirements.",
+        description="Get notified when a server from Hetzner server auction reaches your set requirements.",
     )
     @describe(
         price="The maximum price, including VAT",
@@ -237,7 +237,7 @@ class Hetzner(commands.Cog, name="hetzner"):
         drive_count: Range[int, 1, 16] = 1,
         drive_type: Literal["Any", "NVMe", "SATA", "HDD"] = "Any",
     ):
-        """Get notified when a server from Hetzner server auctions reaches your set requirements."""
+        """Get notified when a server from Hetzner server auction reaches your set requirements."""
         assert interaction.guild is not None
         assert interaction.user is not None
         assert interaction.channel is not None
@@ -303,12 +303,12 @@ class Hetzner(commands.Cog, name="hetzner"):
         )
         await interaction.response.send_message(embed=embed)
 
-    @check_auctions.before_loop
+    @check_auction.before_loop
     async def before_remove_files(self):
         await self.bot.wait_until_ready()
 
     async def cog_unload(self):
-        self.check_auctions.cancel()
+        self.check_auction.cancel()
 
 
 async def setup(bot):
