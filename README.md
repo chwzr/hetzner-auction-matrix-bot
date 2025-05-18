@@ -1,4 +1,4 @@
-# Discord Hetzner Auction Notifications
+# Hetzner Auction Discord Bot
 
 This Discord bot lets users receive notifications when servers matching their specific requirements appear in the Hetzner server auction.
 
