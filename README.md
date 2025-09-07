@@ -1,6 +1,6 @@
-# Hetzner Auction Discord Bot
+# Hetzner Auction Matrix Bot
 
-This Discord bot lets users receive notifications when servers matching their specific requirements appear in the Hetzner server auction.
+This Matrix bot lets users receive notifications when servers matching their specific requirements appear in the Hetzner server auction.
 
 ## Features
 
@@ -15,15 +15,14 @@ This Discord bot lets users receive notifications when servers matching their sp
 - **Automatic Updates**: The bot periodically checks for new auction items.
 - **MongoDB Integration**: User configurations are stored in a MongoDB database.
 
-## Screenshots
+## Features Overview
 
-![Example notification](/screenshots/example-notification.png)
-![Example command](/screenshots/example-command.png)
+The Matrix bot provides the same functionality as the original Discord version but now works entirely through Matrix protocol, making it suitable for decentralized and privacy-focused environments.
 
 ## Requirements
 
 - Python 3.8+
-- discord.py 2.3+
+- matrix-nio[e2e] (Matrix client library)
 - Motor (Async MongoDB driver)
 - Pydantic (for settings management)
 - A MongoDB collection named `hetzner` to store user configurations.
@@ -34,8 +33,8 @@ This Discord bot lets users receive notifications when servers matching their sp
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/Quintenvw/hetzner-auction-discord-bot.git
-   cd hetzner-auction-discord-bot
+   git clone <repository-url>
+   cd hetzner-auction-matrix-bot
    ```
 
 2. **Install dependencies:**
@@ -49,12 +48,14 @@ This Discord bot lets users receive notifications when servers matching their sp
    Create a `.env` file in the root directory and add the following variables:
 
    ```env
-   BOT_TOKEN=your_discord_bot_token
+   MATRIX_HOMESERVER=https://matrix.org
+   MATRIX_USERNAME=@your_bot_username:matrix.org
+   MATRIX_PASSWORD=your_matrix_bot_password
    MONGODB_URI=your_mongodb_connection_string
-   HETZNER_NOTIFICATIONS_CHANNEL_ID=your_discord_channel_id_for_notifications
+   HETZNER_NOTIFICATIONS_ROOM_ID=!your_matrix_room_id:matrix.org
    ```
 
-    You can get a Discord bot token from the [Discord developer portal](https://discord.com/developers/applications).
+   You need to create a Matrix account for your bot and get the room ID where you want notifications to be sent.
 
 ## Usage
 
@@ -66,11 +67,16 @@ This Discord bot lets users receive notifications when servers matching their sp
 
 2. **Available Commands:**
 
-   The bot uses slash commands. Use `/hetzner` to save a config and get a notification once it becomes available.
+   The bot responds to text commands in Matrix rooms:
+   
+   - `!hetzner <price> [currency]` - Set up monitoring for servers under the specified price
+   - `!help` - Show available commands
+   
+   Example: `!hetzner 50 EUR` - Monitor for servers under 50 EUR
 
 ## How it Works
 
-The bot periodically fetches server auction data from the Hetzner API. It then compares this data against the configurations saved by users in the MongoDB database. If a matching server is found, a notification is sent to the configured Discord channel, mentioning the user who set up the alert.
+The bot periodically fetches server auction data from the Hetzner API. It then compares this data against the configurations saved by users in the MongoDB database. If a matching server is found, a notification is sent to the configured Matrix room, mentioning the user who set up the alert.
 
 Configurations are automatically deleted after a notification is sent or if no server has been found within 90 days.
 

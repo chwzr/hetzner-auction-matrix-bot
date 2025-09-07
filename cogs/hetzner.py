@@ -1,27 +1,41 @@
-import discord
-from discord.app_commands import (
-    Range,
-    command,
-    describe,
-    guild_only,
-)
-from discord.app_commands.checks import bot_has_permissions, cooldown
-from discord.ext import commands, tasks
-from discord.interactions import Interaction
-from discord.ui import Button
 from settings import settings
-from typing import Literal
 import asyncio
 import datetime
 
 
-class Hetzner(commands.Cog, name="hetzner"):
+class HetznerMonitor:
     def __init__(self, bot):
-        super().__init__()
         self.bot = bot
-        self.check_auction.start()
+        self.monitoring_task = None
+        self.running = False
 
-    @tasks.loop(minutes=31, reconnect=True)
+    async def start(self):
+        """Start the monitoring task"""
+        self.running = True
+        self.monitoring_task = asyncio.create_task(self._monitor_loop())
+
+    async def stop(self):
+        """Stop the monitoring task"""
+        self.running = False
+        if self.monitoring_task:
+            self.monitoring_task.cancel()
+            try:
+                await self.monitoring_task
+            except asyncio.CancelledError:
+                pass
+
+    async def _monitor_loop(self):
+        """Main monitoring loop"""
+        while self.running:
+            try:
+                await self.check_auction()
+                await asyncio.sleep(31 * 60)  # Wait 31 minutes
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Error in monitoring loop: {e}")
+                await asyncio.sleep(60)  # Wait 1 minute before retrying
+
     async def check_auction(self):
         print("Checking Hetzner auction...")
 
@@ -32,12 +46,9 @@ class Hetzner(commands.Cog, name="hetzner"):
             return
         print(f"Found {len(configs)} Hetzner configs.")
 
-        # Get the channels to send notifications
-        channel = self.bot.get_channel(
-            settings.hetzner_notifications_channel_id
-        ) or await self.bot.fetch_channel(settings.hetzner_notifications_channel_id)
-        if not channel:
-            print("Hetzner auction notifications channel not found.")
+        # Check if we have a room configured for notifications
+        if not settings.hetzner_notifications_room_id:
+            print("Hetzner auction notifications room not configured.")
             return
 
         # Fetch the data from Hetzner
@@ -152,37 +163,21 @@ class Hetzner(commands.Cog, name="hetzner"):
             if short_items:
                 formatted_description += " - ".join(short_items)
 
-            # Send notification in the channel
-            user = self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
-            if user:
-                embed = discord.Embed(
-                    title="Server Found!",
-                    description=f"### A server matching your requirements has been found in the Hetzner server auction.\n{formatted_description}",
-                    color=0x00FF00,
-                )
-                embed.add_field(
-                    name="Price",
-                    value=f"{found_price} {currency} (incl. {vat_percentage}% VAT)",
-                )
-                embed.add_field(name="Location", value=found_location)
-                embed.add_field(name="CPU", value=found_cpu)
-                embed.add_field(
-                    name="RAM", value=f"{found_ram_size} GB ({found_ram_ecc})"
-                )
-                embed.add_field(
-                    name="Storage", value=f"{found_hdd_size} GB ({found_hdd_count} drives)"
-                )
-
-                view = discord.ui.View()
-                view.add_item(
-                    Button(
-                        label="View Server",
-                        url=found_url,
-                        style=discord.ButtonStyle.link,
-                    )
-                )
-
-                await channel.send(content=user.mention, embed=embed, view=view)
+            # Send notification via Matrix
+            server_data = {
+                'price': found_price,
+                'currency': currency,
+                'location': found_location,
+                'cpu': found_cpu,
+                'ram_size': found_ram_size,
+                'ram_ecc': found_ram_ecc,
+                'hdd_size': found_hdd_size,
+                'hdd_count': found_hdd_count,
+                'url': found_url,
+                'description': formatted_description
+            }
+            
+            await self.bot.send_notification(user_id, server_data)
 
             configs_to_delete.append(config.get("_id"))
 
@@ -202,54 +197,18 @@ class Hetzner(commands.Cog, name="hetzner"):
         )
         print("Deleted configs older than 90 days.")
 
-    @command(
-        name="hetzner",
-        description="Get notified when a server from Hetzner server auction reaches your set requirements.",
-    )
-    @describe(
-        price="The maximum price, including VAT",
-        vat_percentage="The percentage of VAT you have to pay",
-        currency="EUR or USD",
-        location="The location of the server",
-        cpu="AMD or Intel",
-        ram_size="The minimum amount RAM, in GB",
-        ram_ecc="Whether the RAM has to be ECC or not",
-        drive_size="The minimum size of the largest drive, in GB",
-        drive_count="The minimum amount of drives",
-        drive_type="Server needs at least one specific drive type (NVMe, SATA SSD, or HDD)",
-    )
-    @guild_only()
-    @bot_has_permissions(
-        send_messages=True, embed_links=True, external_emojis=True, attach_files=True
-    )
-    @cooldown(1, 5, key=lambda i: (i.guild_id, i.user.id))
-    async def slash_hetzner(
-        self,
-        interaction: Interaction,
-        price: Range[int, 0, 500] = 0,
-        vat_percentage: Range[int, 0, 100] = 0,
-        currency: Literal["EUR", "USD"] = "EUR",
-        location: Literal["All Datacenters", "NBG", "FSN", "HEL"] = "All Datacenters",
-        cpu: Literal["Any", "AMD", "Intel"] = "Any",
-        ram_size: Range[int, 32, 1024] = 32,
-        ram_ecc: bool = False,
-        drive_size: Range[int, 256, 22528] = 256,
-        drive_count: Range[int, 1, 16] = 1,
-        drive_type: Literal["Any", "NVMe", "SATA", "HDD"] = "Any",
-    ):
-        """Get notified when a server from Hetzner server auction reaches your set requirements."""
-        assert interaction.guild is not None
-        assert interaction.user is not None
-        assert interaction.channel is not None
-
+    async def save_user_config(self, user_id: str, price: int, currency: str = "EUR", 
+                              vat_percentage: int = 0, location: str = None, 
+                              cpu: str = None, ram_size: int = None, ram_ecc: bool = False,
+                              drive_size: int = None, drive_count: int = None, drive_type: str = None):
+        """Save a user's Hetzner monitoring configuration"""
+        
         # Users can't have more than 10 configs
         user_configs = await self.bot.db.hetzner.count_documents(
-            {"user_id": interaction.user.id}
+            {"user_id": user_id}
         )
         if user_configs >= 10:
-            return await interaction.response.send_message(
-                ":x: | You can't have more than 10 configs!"
-            )
+            raise ValueError("You can't have more than 10 configs!")
 
         current_timestamp = int(
             datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
@@ -257,60 +216,28 @@ class Hetzner(commands.Cog, name="hetzner"):
 
         # Make the config document
         data = {
-            "user_id": interaction.user.id,
+            "user_id": user_id,
             "timestamp": current_timestamp,
             "currency": currency,
         }
-        requirements = ""
-        if price != 0:
+        
+        if price > 0:
             data["price"] = price
-            requirements += f"> Less than {price} {currency}"
-            if vat_percentage and vat_percentage != 0:
+            if vat_percentage > 0:
                 data["vat_percentage"] = vat_percentage
-                requirements += f" (incl. {vat_percentage}% VAT)"
-            requirements += "\n"
-        if location != "All Datacenters":
+        if location and location != "All Datacenters":
             data["location"] = location
-            requirements += f"> Location: {location}\n"
-        if cpu != "Any":
+        if cpu and cpu != "Any":
             data["cpu"] = cpu
-            requirements += f"> CPU: {cpu}\n"
-        if ram_size != 32:
+        if ram_size and ram_size > 32:
             data["ram_size"] = ram_size
-            requirements += f"> At least {ram_size}GB RAM\n"
         if ram_ecc:
             data["ram_ecc"] = ram_ecc
-            requirements += "> RAM must be ECC\n"
-        if drive_size != 256:
+        if drive_size and drive_size > 256:
             data["hdd_size"] = drive_size
-            requirements += f"> At least {drive_size}GB HDD\n"
-        if drive_count != 1:
+        if drive_count and drive_count > 1:
             data["hdd_count"] = drive_count
-            requirements += f"> At least {drive_count} HDDs\n"
-        if drive_type != "Any":
+        if drive_type and drive_type != "Any":
             data["hdd_type"] = drive_type.lower()
-            requirements += f"> Has {drive_type} drives\n"
+            
         await self.bot.db.hetzner.insert_one(data)
-
-        # Send the confirmation message
-        embed = discord.Embed(
-            title="Requirements saved!",
-            description=f"Your Hetzner server config has been saved and you will be notified when a server matching your requirements is found.\n\n{requirements}",
-            color=0x00FF00,
-        )
-        embed.set_footer(
-            text="You can save up to 10 server configs. Each server config is valid for 90 days.",
-        )
-        await interaction.response.send_message(embed=embed)
-
-    @check_auction.before_loop
-    async def before_remove_files(self):
-        await self.bot.wait_until_ready()
-
-    async def cog_unload(self):
-        self.check_auction.cancel()
-
-
-async def setup(bot):
-    n = Hetzner(bot)
-    await bot.add_cog(n)
