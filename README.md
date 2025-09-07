@@ -69,10 +69,41 @@ The Matrix bot provides the same functionality as the original Discord version b
 
    The bot responds to text commands in Matrix rooms:
    
-   - `!hetzner <price> [currency]` - Set up monitoring for servers under the specified price
-   - `!help` - Show available commands
+   **Main Command:**
+   ```
+   !hetzner <price> [vat%] [currency] [location] [cpu] [ram_size] [ram_ecc] [drive_size] [drive_count] [drive_type]
+   ```
    
-   Example: `!hetzner 50 EUR` - Monitor for servers under 50 EUR
+   **Parameters (all optional except price):**
+   - **price** (0-500): Maximum price you want to pay
+   - **vat%** (0-100): VAT percentage you pay (default: 0)
+   - **currency**: EUR or USD (default: EUR)
+   - **location**: NBG, FSN, or HEL (default: any)
+   - **cpu**: AMD or Intel (default: any)
+   - **ram_size** (32-1024): Minimum RAM in GB (default: any)
+   - **ram_ecc**: true or false - ECC RAM required (default: false)
+   - **drive_size** (256-22528): Minimum drive size in GB (default: any)
+   - **drive_count** (1-16): Minimum number of drives (default: any)
+   - **drive_type**: NVMe, SATA, or HDD (default: any)
+   
+   **Other Commands:**
+   - `!help` - Show detailed help message with all parameters
+   
+   **Examples:**
+   - `!hetzner 50` - Monitor servers under 50 EUR
+   - `!hetzner 100 19 EUR FSN AMD` - Under 100 EUR (incl. 19% VAT), in Frankfurt, AMD CPU
+   - `!hetzner 75 0 USD NBG Intel 64 true 1000 2 NVMe` - Full specification: Under $75, in Nuremberg, Intel CPU, 64GB+ ECC RAM, 1TB+ storage, 2+ NVMe drives
+   
+   **Location Codes:**
+   - **NBG**: Nuremberg, Germany
+   - **FSN**: Falkenstein, Germany  
+   - **HEL**: Helsinki, Finland
+   
+   **Notes:**
+   - You can have up to 10 active configurations per user
+   - Configurations automatically expire after 90 days
+   - All parameters after price are optional and positional
+   - The bot checks for matching servers every 31 minutes
 
 ## How it Works
 
