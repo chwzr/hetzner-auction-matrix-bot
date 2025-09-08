@@ -9,8 +9,10 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, frozen=True)
 
-    bot_token: str = Field(..., alias="BOT_TOKEN")
+    matrix_homeserver: str = Field(..., alias="MATRIX_HOMESERVER")
+    matrix_username: str = Field(..., alias="MATRIX_USERNAME")
+    matrix_password: str = Field(..., alias="MATRIX_PASSWORD")
     mongodb_uri: str = Field(..., alias="MONGODB_URI")
-    hetzner_notifications_channel_id: int = Field(..., alias="HETZNER_NOTIFICATIONS_CHANNEL_ID")
+    hetzner_notifications_room_id: str = Field(..., alias="HETZNER_NOTIFICATIONS_ROOM_ID")
 
 settings: Settings = Settings()  # type: ignore[call-arg]

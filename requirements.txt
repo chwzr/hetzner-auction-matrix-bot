@@ -1,4 +1,4 @@
-discord.py
+matrix-nio[e2e]
 aiohttp
 motor
 pydantic

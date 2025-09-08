@@ -1,6 +1,6 @@
-# Hetzner Auction Discord Bot
+# Hetzner Auction Matrix Bot
 
-This Discord bot lets users receive notifications when servers matching their specific requirements appear in the Hetzner server auction.
+This Matrix bot lets users receive notifications when servers matching their specific requirements appear in the Hetzner server auction.
 
 ## Features
 
@@ -15,15 +15,14 @@ This Discord bot lets users receive notifications when servers matching their sp
 - **Automatic Updates**: The bot periodically checks for new auction items.
 - **MongoDB Integration**: User configurations are stored in a MongoDB database.
 
-## Screenshots
+## Features Overview
 
-![Example notification](/screenshots/example-notification.png)
-![Example command](/screenshots/example-command.png)
+The Matrix bot provides the same functionality as the original Discord version but now works entirely through Matrix protocol, making it suitable for decentralized and privacy-focused environments.
 
 ## Requirements
 
 - Python 3.8+
-- discord.py 2.3+
+- matrix-nio[e2e] (Matrix client library)
 - Motor (Async MongoDB driver)
 - Pydantic (for settings management)
 - A MongoDB collection named `hetzner` to store user configurations.
@@ -34,8 +33,8 @@ This Discord bot lets users receive notifications when servers matching their sp
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/Quintenvw/hetzner-auction-discord-bot.git
-   cd hetzner-auction-discord-bot
+   git clone <repository-url>
+   cd hetzner-auction-matrix-bot
    ```
 
 2. **Install dependencies:**
@@ -49,12 +48,14 @@ This Discord bot lets users receive notifications when servers matching their sp
    Create a `.env` file in the root directory and add the following variables:
 
    ```env
-   BOT_TOKEN=your_discord_bot_token
+   MATRIX_HOMESERVER=https://matrix.org
+   MATRIX_USERNAME=@your_bot_username:matrix.org
+   MATRIX_PASSWORD=your_matrix_bot_password
    MONGODB_URI=your_mongodb_connection_string
-   HETZNER_NOTIFICATIONS_CHANNEL_ID=your_discord_channel_id_for_notifications
+   HETZNER_NOTIFICATIONS_ROOM_ID=!your_matrix_room_id:matrix.org
    ```
 
-    You can get a Discord bot token from the [Discord developer portal](https://discord.com/developers/applications).
+   You need to create a Matrix account for your bot and get the room ID where you want notifications to be sent.
 
 ## Usage
 
@@ -66,11 +67,47 @@ This Discord bot lets users receive notifications when servers matching their sp
 
 2. **Available Commands:**
 
-   The bot uses slash commands. Use `/hetzner` to save a config and get a notification once it becomes available.
+   The bot responds to text commands in Matrix rooms:
+   
+   **Main Command:**
+   ```
+   !hetzner <price> [vat%] [currency] [location] [cpu] [ram_size] [ram_ecc] [drive_size] [drive_count] [drive_type]
+   ```
+   
+   **Parameters (all optional except price):**
+   - **price** (0-500): Maximum price you want to pay
+   - **vat%** (0-100): VAT percentage you pay (default: 0)
+   - **currency**: EUR or USD (default: EUR)
+   - **location**: NBG, FSN, or HEL (default: any)
+   - **cpu**: AMD or Intel (default: any)
+   - **ram_size** (32-1024): Minimum RAM in GB (default: any)
+   - **ram_ecc**: true or false - ECC RAM required (default: false)
+   - **drive_size** (256-22528): Minimum drive size in GB (default: any)
+   - **drive_count** (1-16): Minimum number of drives (default: any)
+   - **drive_type**: NVMe, SATA, or HDD (default: any)
+   
+   **Other Commands:**
+   - `!help` - Show detailed help message with all parameters
+   
+   **Examples:**
+   - `!hetzner 50` - Monitor servers under 50 EUR
+   - `!hetzner 100 19 EUR FSN AMD` - Under 100 EUR (incl. 19% VAT), in Frankfurt, AMD CPU
+   - `!hetzner 75 0 USD NBG Intel 64 true 1000 2 NVMe` - Full specification: Under $75, in Nuremberg, Intel CPU, 64GB+ ECC RAM, 1TB+ storage, 2+ NVMe drives
+   
+   **Location Codes:**
+   - **NBG**: Nuremberg, Germany
+   - **FSN**: Falkenstein, Germany  
+   - **HEL**: Helsinki, Finland
+   
+   **Notes:**
+   - You can have up to 10 active configurations per user
+   - Configurations automatically expire after 90 days
+   - All parameters after price are optional and positional
+   - The bot checks for matching servers every 31 minutes
 
 ## How it Works
 
-The bot periodically fetches server auction data from the Hetzner API. It then compares this data against the configurations saved by users in the MongoDB database. If a matching server is found, a notification is sent to the configured Discord channel, mentioning the user who set up the alert.
+The bot periodically fetches server auction data from the Hetzner API. It then compares this data against the configurations saved by users in the MongoDB database. If a matching server is found, a notification is sent to the configured Matrix room, mentioning the user who set up the alert.
 
 Configurations are automatically deleted after a notification is sent or if no server has been found within 90 days.
 
