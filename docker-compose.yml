@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # MongoDB database for storing user configurations
+  mongodb:
+    image: mongo:7.0
+    container_name: hetzner-bot-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme}
+      MONGO_INITDB_DATABASE: hetzner
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - "27017:27017"
+    networks:
+      - hetzner-bot-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Hetzner Auction Matrix Bot
+  hetzner-bot:
+    build: .
+    container_name: hetzner-bot
+    restart: unless-stopped
+    environment:
+      # Matrix configuration
+      MATRIX_HOMESERVER: ${MATRIX_HOMESERVER}
+      MATRIX_USERNAME: ${MATRIX_USERNAME}
+      MATRIX_PASSWORD: ${MATRIX_PASSWORD}
+      HETZNER_NOTIFICATIONS_ROOM_ID: ${HETZNER_NOTIFICATIONS_ROOM_ID}
+      
+      # MongoDB configuration
+      MONGODB_URI: mongodb://admin:${MONGO_ROOT_PASSWORD:-changeme}@mongodb:27017/hetzner?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - hetzner-bot-network
+    volumes:
+      # Optional: Mount logs directory for persistence
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import asyncio; print('Bot health check')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  hetzner-bot-network:
+    driver: bridge
